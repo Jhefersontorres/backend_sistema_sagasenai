@@ -13,7 +13,13 @@ class PostgreSQLConnection:
     dialect = "postgresql"
 
     def __init__(self, database_url):
-        self._connection = psycopg.connect(database_url)
+        try:
+            self._connection = psycopg.connect(database_url)
+        except psycopg.ProgrammingError:
+            raise RuntimeError(
+                "DATABASE_URL is invalid. Check its URI format and URL-encode "
+                "special characters in the credentials."
+            ) from None
 
     def cursor(self, dictionary=False):
         row_factory = dict_row if dictionary else tuple_row

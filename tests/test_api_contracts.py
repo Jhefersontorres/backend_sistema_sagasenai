@@ -3,6 +3,7 @@ import json
 import unittest
 from unittest.mock import patch
 
+import psycopg
 from fastapi import Request
 from pydantic import ValidationError
 from fastapi.security import HTTPAuthorizationCredentials
@@ -12,7 +13,7 @@ from src.core.exceptions import (
     DuplicateEvaluationError,
     EvaluationClosedError,
 )
-from src.db.connection import PostgreSQLCursor
+from src.db.connection import PostgreSQLConnection, PostgreSQLCursor
 from src.db.resources import managed_connection, managed_cursor
 from src.main import application_error_handler, http_error_handler
 from src.models import (
@@ -55,6 +56,22 @@ def create_request() -> Request:
 
 
 class PostgreSQLCursorTests(unittest.TestCase):
+    def test_invalid_connection_string_error_does_not_expose_credentials(self):
+        private_value = "private%credential"
+        with patch(
+            "src.db.connection.psycopg.connect",
+            side_effect=psycopg.ProgrammingError(
+                f'invalid percent-encoded token: "{private_value}"'
+            ),
+        ):
+            with self.assertRaises(RuntimeError) as error:
+                PostgreSQLConnection(
+                    f"postgresql://user:{private_value}@db.example/postgres"
+                )
+
+        self.assertIn("DATABASE_URL is invalid", str(error.exception))
+        self.assertNotIn(private_value, str(error.exception))
+
     class FakeCursor:
         def __init__(self, row):
             self.row = row
