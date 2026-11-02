@@ -13,6 +13,7 @@ from src.core.exceptions import (
     DuplicateEvaluationError,
     EvaluationClosedError,
 )
+from src.config import _normalize_database_url
 from src.db.connection import PostgreSQLConnection, PostgreSQLCursor
 from src.db.resources import managed_connection, managed_cursor
 from src.main import application_error_handler, http_error_handler
@@ -53,6 +54,19 @@ def create_request() -> Request:
             "server": ("testserver", 80),
         }
     )
+
+
+class DatabaseUrlConfigTests(unittest.TestCase):
+    def test_database_url_removes_accidental_environment_assignment_prefix(self):
+        uri = "postgresql://user:password@db.example:6543/postgres"
+        self.assertEqual(
+            _normalize_database_url(f"DATABASE_URL={uri}"),
+            uri,
+        )
+
+    def test_database_url_keeps_normal_uri_unchanged(self):
+        uri = "postgresql://user:password@db.example:6543/postgres"
+        self.assertEqual(_normalize_database_url(uri), uri)
 
 
 class PostgreSQLCursorTests(unittest.TestCase):

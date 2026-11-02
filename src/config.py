@@ -5,11 +5,22 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _normalize_database_url(value):
+    if value is None:
+        return None
+
+    value = value.strip()
+    assignment_prefix = "DATABASE_URL="
+    if value.startswith(assignment_prefix):
+        value = value[len(assignment_prefix):].strip()
+    return value
+
+
 class Settings:
     APP_ENV = os.getenv("APP_ENV", "development").lower()
     DB_DRIVER = os.getenv("DB_DRIVER", "mysql").lower()
-    DATABASE_URL = os.getenv(
-        "DB_TEST_URL" if APP_ENV == "test" else "DATABASE_URL"
+    DATABASE_URL = _normalize_database_url(
+        os.getenv("DB_TEST_URL" if APP_ENV == "test" else "DATABASE_URL")
     )
     CORS_ALLOWED_ORIGINS = tuple(
         origin.strip()
