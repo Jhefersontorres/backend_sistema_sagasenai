@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import sqlite3
+from urllib.parse import urlsplit
 
 import mysql.connector
 import psycopg
@@ -10,6 +11,41 @@ from psycopg.rows import dict_row, tuple_row
 from src.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def _database_url_shape(database_url):
+    value = database_url if isinstance(database_url, str) else ""
+    checks = {
+        "has_assignment_prefix": value.lstrip().startswith("DATABASE_URL="),
+        "has_outer_whitespace": bool(value) and value != value.strip(),
+        "has_quotes": '"' in value or "'" in value,
+        "has_malformed_percent_escape": bool(
+            re.search(r"%(?![0-9a-fA-F]{2})", value)
+        ),
+    }
+
+    try:
+        parsed = urlsplit(value.strip())
+        checks.update(
+            {
+                "scheme_is_postgresql": parsed.scheme in {"postgres", "postgresql"},
+                "has_username": bool(parsed.username),
+                "has_password": parsed.password is not None,
+                "host_is_supabase_pooler": bool(
+                    parsed.hostname
+                    and parsed.hostname.endswith(".pooler.supabase.com")
+                ),
+                "port_is_transaction_pooler": parsed.port == 6543,
+                "database_is_postgres": parsed.path == "/postgres",
+                "has_query_parameters": bool(parsed.query),
+            }
+        )
+    except ValueError:
+        checks["uri_components_parse"] = False
+    else:
+        checks["uri_components_parse"] = True
+
+    return ", ".join(f"{name}={value}" for name, value in checks.items())
 
 
 class PostgreSQLConnection:
@@ -26,7 +62,11 @@ class PostgreSQLConnection:
                 reason = "invalid URI query parameter"
             else:
                 reason = "PostgreSQL rejected the URI syntax"
-            logger.error("DATABASE_URL parser rejected its value: %s", reason)
+            logger.error(
+                "DATABASE_URL parser rejected its value: %s; safe URI checks: %s",
+                reason,
+                _database_url_shape(database_url),
+            )
             raise RuntimeError(
                 f"DATABASE_URL is invalid: {reason}. Check its URI format and "
                 "URL-encode special characters in the credentials."

@@ -73,6 +73,8 @@ class PostgreSQLCursorTests(unittest.TestCase):
         self.assertNotIn(private_value, str(error.exception))
         self.assertIn("invalid percent escape", logs.output[0])
         self.assertNotIn(private_value, logs.output[0])
+        self.assertIn("has_malformed_percent_escape=True", logs.output[0])
+        self.assertIn("has_password=True", logs.output[0])
 
     def test_invalid_connection_string_error_uses_safe_fallback_reason(self):
         private_value = "private-credential"
