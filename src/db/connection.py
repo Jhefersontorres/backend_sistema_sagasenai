@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import sqlite3
@@ -7,6 +8,8 @@ import psycopg
 from psycopg.rows import dict_row, tuple_row
 
 from src.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class PostgreSQLConnection:
@@ -23,6 +26,7 @@ class PostgreSQLConnection:
                 reason = "invalid URI query parameter"
             else:
                 reason = "PostgreSQL rejected the URI syntax"
+            logger.error("DATABASE_URL parser rejected its value: %s", reason)
             raise RuntimeError(
                 f"DATABASE_URL is invalid: {reason}. Check its URI format and "
                 "URL-encode special characters in the credentials."

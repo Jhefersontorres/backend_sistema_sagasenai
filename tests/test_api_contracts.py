@@ -63,7 +63,7 @@ class PostgreSQLCursorTests(unittest.TestCase):
             side_effect=psycopg.ProgrammingError(
                 f'invalid percent-encoded token: "{private_value}"'
             ),
-        ):
+        ), self.assertLogs("src.db.connection", level="ERROR") as logs:
             with self.assertRaises(RuntimeError) as error:
                 PostgreSQLConnection(
                     f"postgresql://user:{private_value}@db.example/postgres"
@@ -71,6 +71,8 @@ class PostgreSQLCursorTests(unittest.TestCase):
 
         self.assertIn("invalid percent escape", str(error.exception))
         self.assertNotIn(private_value, str(error.exception))
+        self.assertIn("invalid percent escape", logs.output[0])
+        self.assertNotIn(private_value, logs.output[0])
 
     def test_invalid_connection_string_error_uses_safe_fallback_reason(self):
         private_value = "private-credential"
