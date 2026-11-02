@@ -69,7 +69,26 @@ class PostgreSQLCursorTests(unittest.TestCase):
                     f"postgresql://user:{private_value}@db.example/postgres"
                 )
 
-        self.assertIn("DATABASE_URL is invalid", str(error.exception))
+        self.assertIn("invalid percent escape", str(error.exception))
+        self.assertNotIn(private_value, str(error.exception))
+
+    def test_invalid_connection_string_error_uses_safe_fallback_reason(self):
+        private_value = "private-credential"
+        with patch(
+            "src.db.connection.psycopg.connect",
+            side_effect=psycopg.ProgrammingError(
+                f'connection URI contains invalid content: "{private_value}"'
+            ),
+        ):
+            with self.assertRaises(RuntimeError) as error:
+                PostgreSQLConnection(
+                    f"postgresql://user:{private_value}@db.example/postgres"
+                )
+
+        self.assertIn(
+            "PostgreSQL rejected the URI syntax",
+            str(error.exception),
+        )
         self.assertNotIn(private_value, str(error.exception))
 
     class FakeCursor:

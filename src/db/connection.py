@@ -15,10 +15,17 @@ class PostgreSQLConnection:
     def __init__(self, database_url):
         try:
             self._connection = psycopg.connect(database_url)
-        except psycopg.ProgrammingError:
+        except psycopg.ProgrammingError as error:
+            parser_error = str(error).lower()
+            if "invalid percent-encoded token" in parser_error:
+                reason = "invalid percent escape in a URI component"
+            elif "invalid uri query parameter" in parser_error:
+                reason = "invalid URI query parameter"
+            else:
+                reason = "PostgreSQL rejected the URI syntax"
             raise RuntimeError(
-                "DATABASE_URL is invalid. Check its URI format and URL-encode "
-                "special characters in the credentials."
+                f"DATABASE_URL is invalid: {reason}. Check its URI format and "
+                "URL-encode special characters in the credentials."
             ) from None
 
     def cursor(self, dictionary=False):
