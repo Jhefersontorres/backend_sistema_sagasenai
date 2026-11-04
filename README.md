@@ -84,6 +84,22 @@ explicitamente se forem usadas para chamar esta API.
 Antes do primeiro deploy, aplique as migrations no Supabase usando a mesma
 `DATABASE_URL`. Não coloque credenciais no código nem no Git.
 
+## Administração
+
+Depois de autenticar em `POST /admin/validar`, envie o token retornado no
+cabeçalho `Authorization: Bearer <token>`. As rotas abaixo exigem essa sessão:
+
+| Recurso | Operações |
+| --- | --- |
+| `/admin/escuderias` | `GET`, `POST`, `PUT /{id}`, `DELETE /{id}` |
+| `/admin/avaliadores` | `GET`, `POST`, `PUT /{id}`, `DELETE /{id}` |
+| `/admin/criterios` | `GET`, `POST`, `PUT /{id}`, `DELETE /{id}` |
+
+A exclusão é bloqueada com HTTP 409 quando a escuderia, o avaliador ou o
+critério possui registros associados; o histórico não é apagado.
+Os critérios são cadastrados e editados pela descrição. O campo `peso` mantém
+seu valor padrão atual, pois o cálculo de ranking ainda não utiliza pesos.
+
 ### Desenvolvimento local com SQLite
 
 O backend continua usando MySQL por padrão. Para desenvolvimento local, é

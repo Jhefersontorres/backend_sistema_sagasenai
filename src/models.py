@@ -13,6 +13,22 @@ CourseName = Annotated[
     str,
     StringConstraints(strip_whitespace=True, min_length=1, max_length=100),
 ]
+TeamName = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=100),
+]
+ClassName = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=20),
+]
+PersonName = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=100),
+]
+CriterionDescription = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=250),
+]
 StageName = Annotated[
     str,
     StringConstraints(strip_whitespace=True, min_length=1, max_length=50),
@@ -25,9 +41,9 @@ SchoolName = Annotated[
 
 
 class EscuderiaCreate(BaseModel):
-    nome: NonEmptyString
-    turma: NonEmptyString
-    nome_mentor: NonEmptyString
+    nome: TeamName
+    turma: ClassName
+    nome_mentor: PersonName
     curso: CourseName
     etapa: StageName
     periodo: PeriodName
@@ -48,6 +64,20 @@ class EscuderiaRead(BaseModel):
     etapa: str | None
     periodo: str | None
     escola: str | None
+
+
+class AvaliadorCreate(BaseModel):
+    nome: PersonName
+
+
+class CriterioCreate(BaseModel):
+    descricao: CriterionDescription
+
+
+class CriterioRead(BaseModel):
+    id_criterio: PositiveId
+    descricao: str
+    peso: float
 
 
 class EscuderiaAvaliacaoStatus(BaseModel):

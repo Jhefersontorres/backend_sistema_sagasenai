@@ -3,7 +3,11 @@ import sqlite3
 import mysql.connector
 import psycopg
 
-from src.core.exceptions import DuplicateEvaluationError, EvaluationClosedError
+from src.core.exceptions import (
+    DuplicateEvaluationError,
+    EvaluationClosedError,
+    ResourceNotFoundError,
+)
 from src.db.connection import get_connection
 from src.db.locks import disclosure_lock
 from src.db.resources import managed_connection, managed_cursor
@@ -33,6 +37,21 @@ def criar_avaliacao(
 
                     if divulgacao and divulgacao["mostrar_resultado"]:
                         raise EvaluationClosedError()
+
+                    cursor.execute(
+                        """
+                        SELECT usuario.id_usuario
+                        FROM usuario
+                        JOIN tipousuario
+                            ON usuario.id_tipousuario = tipousuario.id_tipousuario
+                        WHERE usuario.id_usuario = %s
+                            AND tipousuario.descricao = 'AVALIADOR'
+                        FOR UPDATE
+                        """,
+                        (id_avaliador,),
+                    )
+                    if cursor.fetchone() is None:
+                        raise ResourceNotFoundError("Avaliador")
 
                     cursor.execute(
                         """

@@ -22,3 +22,21 @@ class DuplicateEvaluationError(ApplicationError):
             status_code=400,
             code="duplicate_evaluation",
         )
+
+
+class ResourceNotFoundError(ApplicationError):
+    def __init__(self, resource: str):
+        super().__init__(
+            f"{resource} não encontrado.",
+            status_code=404,
+            code="resource_not_found",
+        )
+
+
+class ResourceInUseError(ApplicationError):
+    def __init__(self, resource: str):
+        super().__init__(
+            f"{resource} possui registros vinculados e não pode ser excluído.",
+            status_code=409,
+            code="resource_in_use",
+        )

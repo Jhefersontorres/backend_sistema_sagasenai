@@ -92,6 +92,7 @@ class PostgreSQLCursor:
     INSERT_ID_COLUMNS = {
         "usuario": "id_usuario",
         "escuderia": "id_escuderia",
+        "criterio": "id_criterio",
         "avaliacao": "id_avaliacao",
         "divulgacao": "id_divulgacao",
         "resultado": "id_resultado",

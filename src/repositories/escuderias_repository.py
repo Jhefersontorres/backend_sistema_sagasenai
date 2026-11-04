@@ -1,5 +1,6 @@
 from src.db.connection import get_connection
 from src.db.resources import managed_connection, managed_cursor
+from src.core.exceptions import ResourceInUseError, ResourceNotFoundError
 
 
 def _buscar_ou_criar_mentor(cursor, nome_mentor: str):
@@ -89,6 +90,78 @@ def listar_escuderias():
                 """
             )
             return cursor.fetchall()
+
+
+def atualizar_escuderia(
+    id_escuderia: int,
+    nome: str,
+    turma: str,
+    nome_mentor: str,
+    curso: str,
+    etapa: str,
+    periodo: str,
+    escola: str,
+):
+    with managed_connection(get_connection) as conn:
+        with managed_cursor(conn, dictionary=True) as cursor:
+            cursor.execute(
+                "SELECT id_escuderia FROM escuderia WHERE id_escuderia = %s FOR UPDATE",
+                (id_escuderia,),
+            )
+            if cursor.fetchone() is None:
+                raise ResourceNotFoundError("Escuderia")
+
+            id_mentor = _buscar_ou_criar_mentor(cursor, nome_mentor)
+            cursor.execute(
+                """
+                UPDATE escuderia
+                SET nome_escuderia = %s, turma = %s, id_mentor = %s,
+                    curso = %s, etapa = %s, periodo = %s, escola = %s
+                WHERE id_escuderia = %s
+                """,
+                (
+                    nome,
+                    turma,
+                    id_mentor,
+                    curso,
+                    etapa,
+                    periodo,
+                    escola,
+                    id_escuderia,
+                ),
+            )
+        conn.commit()
+
+
+def excluir_escuderia(id_escuderia: int):
+    with managed_connection(get_connection) as conn:
+        with managed_cursor(conn, dictionary=True) as cursor:
+            cursor.execute(
+                "SELECT id_escuderia FROM escuderia WHERE id_escuderia = %s FOR UPDATE",
+                (id_escuderia,),
+            )
+            if cursor.fetchone() is None:
+                raise ResourceNotFoundError("Escuderia")
+
+            cursor.execute(
+                "SELECT COUNT(*) AS total FROM avaliacao WHERE id_escuderia = %s",
+                (id_escuderia,),
+            )
+            if cursor.fetchone()["total"]:
+                raise ResourceInUseError("Escuderia")
+
+            cursor.execute(
+                "SELECT COUNT(*) AS total FROM resultado WHERE id_escuderia = %s",
+                (id_escuderia,),
+            )
+            if cursor.fetchone()["total"]:
+                raise ResourceInUseError("Escuderia")
+
+            cursor.execute(
+                "DELETE FROM escuderia WHERE id_escuderia = %s",
+                (id_escuderia,),
+            )
+        conn.commit()
 
 
 def listar_escuderias_avaliadas(id_avaliador: int):
